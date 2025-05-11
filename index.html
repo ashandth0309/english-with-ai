@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Helper</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            margin-top: 20px;
+        }
+        
+        .header {
+            background-color: #4285f4;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+        
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+        
+        .bot-message {
+            background-color: #e9e9eb;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .user-message {
+            background-color: #4285f4;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #f9f9f9;
+        }
+        
+        #user-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+        }
+        
+        #send-button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        #send-button:hover {
+            background-color: #3367d6;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: #e9e9eb;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888;
+            margin-right: 4px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+            margin-right: 0;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .help-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0 15px 15px;
+            background-color: #f9f9f9;
+        }
+        
+        .help-button {
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 15px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .help-button:hover {
+            background-color: #d0d0d0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            AI English Helper
+        </div>
+        <div class="chat-area" id="chat-area">
+            <div class="message bot-message">
+                Hello! I'm your AI English Helper. I can help you with:
+                <ul>
+                    <li>Word definitions</li>
+                    <li>Grammar explanations</li>
+                    <li>Example sentences</li>
+                    <li>Practice conversations</li>
+                </ul>
+                How can I help you today?
+            </div>
+            <div class="typing-indicator" id="typing-indicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </div>
+        </div>
+        <div class="help-buttons">
+            <button class="help-button" onclick="quickQuestion('Define happy')">Define happy</button>
+            <button class="help-button" onclick="quickQuestion('Give me an example with "however"')">Example with "however"</button>
+            <button class="help-button" onclick="quickQuestion('Explain present perfect tense')">Present perfect</button>
+            <button class="help-button" onclick="quickQuestion('Let\'s practice conversation')">Practice conversation</button>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+            <button id="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chat-area');
+        const userInput = document.getElementById('user-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+        
+        // Focus on input when page loads
+        window.onload = function() {
+            userInput.focus();
+        };
+        
+        // Allow sending message with Enter key
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function quickQuestion(question) {
+            userInput.value = question;
+            sendMessage();
+        }
+        
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            userInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            // Simulate AI thinking time
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                const response = generateResponse(message);
+                addMessage(response, 'bot');
+            }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
+        }
+        
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            messageDiv.textContent = text;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function generateResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            
+            // Greetings
+            if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+                return getRandomResponse([
+                    "Hello there! How can I help you with your English today?",
+                    "Hi! What would you like to learn or practice?",
+                    "Hey! Ready to improve your English skills?"
+                ]);
+            }
+            
+            // Definitions
+            if (lowerMessage.startsWith('define ') || lowerMessage.startsWith('what is ') || lowerMessage.startsWith('what does ') || lowerMessage.includes('meaning')) {
+                const word = userMessage.replace(/define|what is|what does|meaning|\?/gi, '').trim();
+                return generateDefinitionResponse(word);
+            }
+            
+            // Examples
+            if (lowerMessage.includes('example') || lowerMessage.includes('sentence')) {
+                const wordMatch = userMessage.match(/example(?: with| of| for)? (?:the word )?["']?(.+?)["']?/i);
+                const word = wordMatch ? wordMatch[1] : userMessage.replace(/example|sentence|\?/gi, '').trim();
+                return generateExampleResponse(word);
+            }
+            
+            // Grammar explanations
+            if (lowerMessage.includes('grammar') || lowerMessage.includes('explain') || lowerMessage.includes('tense') || lowerMessage.includes('rule')) {
+                return generateGrammarResponse(userMessage);
+            }
+            
+            // Practice conversation
+            if (lowerMessage.includes('practice') || lowerMessage.includes('conversation') || lowerMessage.includes('talk')) {
+                return getRandomResponse([
+                    "Great! Let's practice conversation. Tell me about your day or ask me a question.",
+                    "Conversation practice is excellent! What would you like to talk about?",
+                    "Sure! Let's have a conversation. You can start by telling me about your hobbies or asking me a question."
+                ]);
+            }
+            
+            // Thank you
+            if (lowerMessage.includes('thank')) {
+                return getRandomResponse([
+                    "You're welcome! I'm happy to help with your English learning.",
+                    "No problem! Let me know if you have any other questions.",
+                    "My pleasure! Keep practicing and you'll keep improving."
+                ]);
+            }
+            
+            // Default conversation responses
+            if (lowerMessage.includes('how are you')) {
+                return getRandomResponse([
+                    "I'm doing well, thank you for asking! Ready to help with your English.",
+                    "I'm great! Always happy to assist with language learning.",
+                    "I'm just a program, but I'm functioning perfectly to help you learn!"
+                ]);
+            }
+            
+            if (lowerMessage.includes('your name')) {
+                return "I'm your AI English Helper! You can call me EnglishBot if you'd like.";
+            }
+            
+            // If no specific pattern matched, generate a general response
+            return generateGeneralResponse(userMessage);
+        }
+        
+        function generateDefinitionResponse(word) {
+            if (!word) return "Please tell me which word you'd like me to define.";
+            
+            // Simple dictionary
+            const dictionary = {
+                "happy": "Feeling or showing pleasure or contentment.",
+                "sad": "Feeling or showing sorrow; unhappy.",
+                "run": "Move at a speed faster than walking, never having both feet on the ground at the same time.",
+                "beautiful": "Pleasing the senses or mind aesthetically.",
+                "however": "Used to introduce a statement that contrasts with or seems to contradict something that has been said previously.",
+                "although": "In spite of the fact that; even though.",
+                "quickly": "At a fast speed; rapidly.",
+                "friend": "A person whom one knows and with whom one has a bond of mutual affection."
+            };
+            
+            const lowerWord = word.toLowerCase();
+            if (dictionary[lowerWord]) {
+                return `"${word}" means: ${dictionary[lowerWord]}`;
+            } else {
+                return getRandomResponse([
+                    `I'm not sure about the word "${word}". Could you ask about a different word?`,
+                    `I don't have a definition for "${word}" in my dictionary yet. Try another word!`,
+                    `Hmm, I'm not familiar with "${word}". Could you ask about a more common English word?`
+                ]);
+            }
+        }
+        
+        function generateExampleResponse(word) {
+            if (!word) return "Please tell me which word you'd like me to use in an example sentence.";
+            
+            // Simple examples database
+            const examples = {
+                "happy": "She was very happy when she received the good news.",
+                "sad": "He felt sad after watching the emotional movie.",
+                "run": "I like to run in the park every morning.",
+                "beautiful": "The sunset was so beautiful that we stopped to take pictures.",
+                "however": "I wanted to go for a walk; however, it started raining.",
+                "although": "Although it was late, we decided to finish the project.",
+                "quickly": "She quickly finished her homework so she could go play.",
+                "friend": "My best friend and I have known each other since childhood."
+            };
+            
+            const lowerWord = word.toLowerCase();
+            if (examples[lowerWord]) {
+                return `Here's an example with "${word}": "${examples[lowerWord]}"`;
+            } else {
+                return getRandomResponse([
+                    `I don't have an example for "${word}" right now. Could you ask about a different word?`,
+                    `I'm not sure how to use "${word}" in a sentence. Try another word!`,
+                    `Hmm, I can't think of an example with "${word}" at the moment. Maybe a more common word?`
+                ]);
+            }
+        }
+        
+        function generateGrammarResponse(message) {
+            // Simple grammar explanations
+            if (message.includes('present perfect')) {
+                return "The present perfect tense is formed with 'have/has' + past participle. It's used for actions that started in the past and continue to the present, or actions that happened at an unspecified time before now. Example: 'I have visited Paris three times.'";
+            }
+            
+            if (message.includes('past simple') || message.includes('simple past')) {
+                return "The past simple tense is used for completed actions in the past. Regular verbs add '-ed', while irregular verbs have special forms. Example: 'She worked yesterday.' (regular) or 'He ate breakfast.' (irregular)";
+            }
+            
+            if (message.includes('articles') || message.includes('a') || message.includes('an') || message.includes('the')) {
+                return "Articles are 'a', 'an', and 'the'. 'A' and 'an' are indefinite articles used with nonspecific things ('a book', 'an apple'). 'The' is the definite article used with specific things ('the book on the table').";
+            }
+            
+            if (message.includes('preposition')) {
+                return "Prepositions show relationships between other words (time, place, direction). Examples: 'in the box' (place), 'at 5pm' (time), 'to the store' (direction). Common prepositions: in, on, at, to, from, with, by, for, about.";
+            }
+            
+            return getRandomResponse([
+                "Grammar is the system and structure of a language. Could you be more specific about what you'd like to know?",
+                "English grammar has many rules. Would you like to know about tenses, articles, prepositions, or something else?",
+                "I can explain various grammar topics. Please ask about something specific like verb tenses, sentence structure, or punctuation."
+            ]);
+        }
+        
+        function generateGeneralResponse(message) {
+            // If the message is a question
+            if (message.endsWith('?')) {
+                return getRandomResponse([
+                    "That's an interesting question! I'm designed to help with English learning, so I might not know the answer to everything.",
+                    "Hmm, I'm not sure about that. Could you ask me something about English language learning?",
+                    "I'm afraid I can't answer that. I specialize in helping with English vocabulary, grammar, and conversation practice."
+                ]);
+            }
+            
+            // Default responses for statements
+            return getRandomResponse([
+                "I see. Is there anything about English you'd like to know?",
+                "Interesting! Would you like to practice some English conversation?",
+                "Thanks for sharing! How can I help with your English learning today?",
+                "I'm here to help you learn English. Do you have any questions about vocabulary or grammar?",
+                "Let me know if you'd like to learn a new word, practice conversation, or understand a grammar rule."
+            ]);
+        }
+        
+        function getRandomResponse(responses) {
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+    </script>
+</body>
+</html>
